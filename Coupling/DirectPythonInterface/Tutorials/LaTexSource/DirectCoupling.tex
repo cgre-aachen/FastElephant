@@ -1,0 +1,91 @@
+\documentclass[11pt, a4paper, DIV=14]{scrartcl}
+\usepackage{pdfpages}
+% \usepackage[letterpaper, margin=2cm]{geometry}
+\usepackage{eurosym}
+\usepackage[labelfont={bf}]{caption}
+\usepackage{xcolor}
+\usepackage[hyper]{apacite}
+\usepackage{amssymb}
+\usepackage{textcomp}
+\usepackage{mathtools}
+\usepackage{listings}
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+
+\lstset{style=mystyle}
+
+% adjust float fraction to avoid own page
+\renewcommand{\floatpagefraction}{.8}
+
+% for footnote under table
+% \usepackage{footnote}
+% \makesavenoteenv{tabular}
+\usepackage{tablefootnote}
+\usepackage{tabularx}
+
+\DeclareSymbolFont{eulerletters}{U}{zeur}{b}{n}
+\DeclareMathSymbol{\eulerD}{\mathord}{eulerletters}{`D}
+\newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
+
+\begin{document}
+
+\title{Direct Coupling -- A Tutorial}
+
+\maketitle
+
+At the current stage, the direct coupling has been successfully used within the Python libraries SALib \cite{salib}, SciPy \cite{scipy}, and PyMC \cite{pymc}. Furthermore, we provide a direct coupling to Dakota \cite{adams_et_al} over their Python interface. Note, that for using the Python interface in Dakota, the library has to be compiled from source code. Within this tutorial, we assume a basic understanding of the RB method. In case you want to learn more about the method itself we refer to \cite{prud_et_al,veroy_et_al, hest_et_al}, and for further explanations regarding the method in a geoscientific context we refer to \cite{degen_et_al}.
+
+The idea of the direct coupling is to enable an easy use of the RB model as a surrogate model within inverse processes. We perform the offline stage of the RB method within the DwarfElephant package \cite{degen_et_al}, a MOOSE application \cite{moose-web-page, tonks_et_al} since this stage is computationally demanding, and requires for large-scale models high-performance infrastructures. For the further tutorial, we assume that the offline stage has been already executed and that the offline data was stored in a folder ``offline\_data'', which is placed in the current working directory. For more information regarding the generation of the offline data, we refer to DwarfElephant Tutorial (\textcolor{red}{add link}). Furthermore, we are using the same physical problem as in this tutorial.
+
+\section{Python Libraries}
+The affine decomposition is for each model different, therefore the imported online\_stage class contains not the model-specific decomposition. This decomposition is defined in the model class in our example. There we define the lower bound, and the parameter-dependent parts for the stiffness matrix, and the load vector. 
+
+Next, we have to define the number of A\_q, F\_q, and output of interests. Finally, we need to specify the online parameters. So, in our case the thermal conductivities, which we want to use during the online stage. Note, that in this tutorial we are only performing one online stage to illustrate how to use the direct coupling. In real-case applications, we would perform several of these online solves. 
+ 
+To execute the online stage, we have to first read the offline data. Afterwards, we can perform the online stage itself.
+
+\subsection{Example File}
+\lstinputlisting[language=Python]{../../ExampleScripts/example_direct_coupling.py}
+
+\section{Dakota Coupling}
+For the direct coupling, over the Python interface of Dakota, to Dakota, we rely on the same Python implementation of the online stage with the additional loading of the file ``theta\_objects''.  In this file, we define the model-specific decomposition. An example is given below. Additionally, we need one extra method to allow a communication between Dakota and our Python model. This method is in our example called ``DwarfElephant\_online\_stage'' it takes the arguments from Dakota as an input and with the keyword ``cv'' the continuous variables are accessible. In addition to the Python interfacing file, we have to specify the interface in the Dakota input file with the following lines:
+%
+ \begin{lstlisting}
+interface
+    python
+        analysis_drivers = 'example_direct_coupling_dakota:DwarfElephant_online_stage'
+            numpy
+\end{lstlisting}
+%
+Note that the file ``example\_direct\_coupling\_dakota'' has to be in the folder from which you start the analysis with Dakota.
+
+\subsection{Example File}
+        \lstinputlisting[language=Python]{../../ExampleScripts/example_direct_coupling_dakota.py}
+        \lstinputlisting[language=Python]{../../ExampleScripts/theta_objects.py}
+        
+ \bibliographystyle{apacite}  
+\bibliography{Bib}
+
+\end{document}

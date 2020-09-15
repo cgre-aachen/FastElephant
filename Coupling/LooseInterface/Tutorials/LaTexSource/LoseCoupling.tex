@@ -1,0 +1,110 @@
+\documentclass[11pt, a4paper, DIV=14]{scrartcl}
+\usepackage{pdfpages}
+% \usepackage[letterpaper, margin=2cm]{geometry}
+\usepackage{eurosym}
+\usepackage[labelfont={bf}]{caption}
+\usepackage{xcolor}
+\usepackage[hyper]{apacite}
+\usepackage{amssymb}
+\usepackage{textcomp}
+\usepackage{mathtools}
+\usepackage{listings}
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+
+\lstset{style=mystyle}
+
+% adjust float fraction to avoid own page
+\renewcommand{\floatpagefraction}{.8}
+
+% for footnote under table
+% \usepackage{footnote}
+% \makesavenoteenv{tabular}
+\usepackage{tablefootnote}
+\usepackage{tabularx}
+
+\DeclareSymbolFont{eulerletters}{U}{zeur}{b}{n}
+\DeclareMathSymbol{\eulerD}{\mathord}{eulerletters}{`D}
+\newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
+
+\begin{document}
+
+\title{Loose Coupling to Dakota -- A Tutorial}
+
+\maketitle
+
+Currently, we only support a loose coupling between the software packages MOOSE \cite{moose-web-page, tonks_et_al} and Dakota \cite{adams_et_al} for the finite element simulations. The focus of the DwarfElephant package is on the RB method therefore, we did not develop a direct coupling of the software for the finite element simulations. We assume for this tutorial that both the DwarfElephant package and Dakota are correctly installed. 
+
+For performing coupled analyses with the MOOSE and Dakota package we need three different files: i) the Dakota input file ii) the driver script iii) a template for the MOOSE input file. In the following tutorial, we will present all three files, assuming the usage of the MOOSE application DwarfElephant.
+
+\section{Prepare the Dakota inputfile}
+The Dakota input file has to be modified in the interface section only. The interface type has to be ``fork'' and the ``analysis\_drivers'' has to be assigned to the file name of the used driver script. Then the parameter file name, in our case ``params.in'' and the results file, in our case ``results.out'' have to be defined.
+
+\subsection{Example File}
+\lstinputlisting[language=Python]{../../ExampleScripts/dakota.in}
+
+\section{Prepare the Driver Script}
+\subsection{Pre-Processig}
+Dakota writes the parameters, defined in the Dakota input file, into the file ``params.in''. These input parameters are then inserted into the marked places of the MOOSE template file (``moose.template'') to generate the file moose.i, which serves as an input file for the FE forward simulations. Note that \textcolor{violet}
+{\$1} denotes the params.in file from Dakota and \textcolor{violet}{\$2} denotes the results.out file generated from DwarfElephant, and returned to Dakota. The following line is used to insert the input parameters and generate the MOOSE input file.
+\begin{lstlisting}
+    dprepro $1 moose.template moose.i
+\end{lstlisting}
+``dprepro'' is a function provided by Dakota to allow a faster interfacing of external software packages with Dakota.
+
+\subsection{Simulation}
+Once the MOOSE input file is generated, we need to execute the forward simulation with the given parameters. Therefore, we have to change the directory to the main folder of the DwarfElephant package, where the executable is found. Afterwards, we need to run the code from the command line. The following two lines of code are responsible for that:
+\begin{lstlisting}[language=bash]
+    cd absolute/path/to/DwarfElephant
+    ./DwarfElephant-opt -i /absolute/path/to/folder/containing/Dakota/inputfile/moose.i >> /absolute/path/to/folder/containing/Dakota/inputfile/console.txt 2>&1
+\end{lstlisting}
+Note that you have to adjust the paths to your local system. Furthermore, we write the console output of the forward simulations to file. This is an optional setting.
+
+\subsection{Post-Processing}
+Unless you want to use the file\_tag option from Dakota all post-processing steps are done by the DwarfElephant package. The file\_tag option is required if you want to execute Dakota in parallel.
+
+\subsection{Exampe File}
+\lstinputlisting[language=bash]{../../ExampleScripts/sample_driver_script}
+
+\section{Prepare the MOOSE template}
+In this tutorial, we consider a geothermal conduction problem with, out of simplicity, a one-layer model, where we want to vary the thermal conductivity and the heat flux. The thermal conductivity is denoted with ``{cond}'', and the heat flux with ``{flux}''. Note that the names insight the curled brackets have to coincide with the ones from the Dakota input file.
+
+We return the temperature value at the observation point 1 to Dakota for further analyses. Therefore, we have to define an output class of the type ``DwarfElephantDakotaOutput''. For this class, it is necessary to define the post-processor output that has to be passed to Dakota and the path to the folder with the Dakota input file.
+
+\subsection{Example File}
+\lstinputlisting[language=Python]{../../ExampleScripts/moose.template}
+
+\section{Execute the Analysis}
+First, prepare the input files according to the previous sections. Then start the Dakota input file with the following line, as you would do it for any other Dakota input file.
+\begin{lstlisting}
+dakota -i dakota.in -o dakota.out >> dakota.stdout
+\end{lstlisting}
+
+\bibliographystyle{apacite}  
+\bibliography{Bib}
+
+\end{document}
+ 
+ 

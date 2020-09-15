@@ -1,0 +1,29 @@
+# Example of the Dakota Input File
+
+environment
+  tabular_data
+    tabular_data_file = 'Dakota.dat'
+
+method
+  multidim_parameter_study
+    partitions = 5 5
+
+model
+  single
+
+variables
+  continuous_design = 2
+   lower_bounds      2.0      2.9
+   upper_bounds      4.0      3.9
+   descriptors       "cond"     "flux"
+
+interface
+  analysis_drivers = 'sample_driver_script'
+    fork
+    parameters_file = 'params.in'
+    results_file = 'results.out'
+
+responses
+  response_functions = 1
+  no_gradients
+  no_hessians

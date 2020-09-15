@@ -1,0 +1,22 @@
+# Example of the driver script for coupling the FE simulation of
+# DwarfElephant with Dakota
+
+# --------------
+# PRE-PROCESSING
+#---------------
+# Pass the input parameters of Dakota, and generate the MOOSE input file.
+dprepro $1 moose.template moose.i
+
+# ----------
+# SIMULATION
+# ----------
+# Execution of the forward simulation.
+
+cd absolute/path/to/DwarfElephant
+./DwarfElephant-opt -i /absolute/path/to/folder/containing/Dakota/inputfile/moose.i >> /absolute/path/to/folder/containing/Dakota/inputfile/console.txt 2>&1
+
+# ---------------
+# POST-PROCESSING
+# ---------------
+#add this line if you want to use the file_tag option
+#mv name_defined_in_moose.template $2
